@@ -51,7 +51,7 @@ const MyProductsPage = () => {
     });
   };
 
-  if (!user || (user.role !== 'seller' && user.role !== 'both')) {
+  if (!user || (user.role !== 'SELLER' && user.role !== 'BOTH')) {
     return (
       <div className="container py-12">
         <div className="card max-w-md mx-auto p-8 text-center">
@@ -95,7 +95,7 @@ const MyProductsPage = () => {
       {products.length > 0 ? (
         <div className="space-y-6">
           {products.map(product => (
-            <div key={product.product_id} className="card p-6 fade-in">
+            <div key={product.productId} className="card p-6 fade-in">
               <div className="flex items-start gap-6">
                 {/* Product Image */}
                 <div className="flex-shrink-0">
@@ -133,7 +133,7 @@ const MyProductsPage = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>Listed {formatDate(product.created_at)}</span>
+                          <span>Listed {formatDate(product.createdAt)}</span>
                         </div>
                       </div>
                       <p className="text-gray-600 line-clamp-2 mb-4">
@@ -143,7 +143,7 @@ const MyProductsPage = () => {
                     
                     <div className="text-right">
                       <div className="text-2xl font-bold text-blue-600 mb-1">
-                        {formatCurrency(product.ask_value)}
+                        {formatCurrency(product.askValue)}
                       </div>
                       <div className="text-sm text-gray-500">
                         Revenue: {formatCurrency(product.revenue)}/year
@@ -170,7 +170,7 @@ const MyProductsPage = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-3">
                     <Link
-                      to={`/product/${product.product_id}`}
+                      to={`/product/${product.productId}`}
                       className="btn btn-outline"
                     >
                       <Eye className="w-4 h-4" />
