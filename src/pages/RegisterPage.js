@@ -162,9 +162,9 @@ const RegisterPage = () => {
               className="form-input form-select"
               required
             >
-              <option value="both">Buy and Sell</option>
-              <option value="buyer">Only Buy</option>
-              <option value="seller">Only Sell</option>
+              <option value="BOTH">Buy and Sell</option>
+              <option value="BUYER">Only Buy</option>
+              <option value="SELLER">Only Sell</option>
             </select>
           </div>
 
