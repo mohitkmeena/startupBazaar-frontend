@@ -34,7 +34,7 @@ const FavoritesPage = () => {
   const removeFavorite = async (productId) => {
     try {
       await axios.delete(`/api/favorites/${productId}`);
-      setFavorites(prev => prev.filter(fav => fav.product_id !== productId));
+      setFavorites(prev => prev.filter(fav => fav.productId !== productId));
     } catch (error) {
       console.error('Error removing favorite:', error);
       alert('Failed to remove from favorites');
@@ -73,7 +73,7 @@ const FavoritesPage = () => {
       {favorites.length > 0 ? (
         <div className="grid grid-2 gap-6">
           {favorites.map(product => (
-            <div key={product.product_id} className="card fade-in group">
+            <div key={product.productId} className="card fade-in group">
               <div className="relative">
                 {product.image ? (
                   <img
@@ -97,7 +97,7 @@ const FavoritesPage = () => {
                 </div>
                 
                 <button
-                  onClick={() => removeFavorite(product.product_id)}
+                  onClick={() => removeFavorite(product.productId)}
                   className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -126,9 +126,9 @@ const FavoritesPage = () => {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Asking Price</span>
-                    <span className="font-bold text-blue-600 text-lg">
-                      {formatCurrency(product.ask_value)}
-                    </span>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(product.askValue)}
+                    </div>
                   </div>
                 </div>
 
@@ -139,14 +139,14 @@ const FavoritesPage = () => {
 
                 <div className="flex items-center gap-2">
                   <Link
-                    to={`/product/${product.product_id}`}
+                    to={`/product/${product.productId}`}
                     className="btn btn-primary flex-1 text-center"
                   >
                     <Eye className="w-4 h-4" />
                     View Details
                   </Link>
                   <button
-                    onClick={() => removeFavorite(product.product_id)}
+                    onClick={() => removeFavorite(product.productId)}
                     className="btn btn-outline text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
