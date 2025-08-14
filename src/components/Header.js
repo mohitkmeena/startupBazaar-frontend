@@ -32,8 +32,10 @@ const Header = () => {
   const userLinks = user ? [
     { path: '/favorites', label: 'Favorites', icon: Heart },
     { path: '/offers', label: 'Offers', icon: MessageSquare },
-    { path: '/my-products', label: 'My Products', icon: Store },
-    { path: '/create-product', label: 'List Product', icon: Plus },
+    ...(user.role === 'SELLER' || user.role === 'BOTH' ? [
+      { path: '/my-products', label: 'My Products', icon: Store },
+      { path: '/create-product', label: 'List Product', icon: Plus },
+    ] : []),
   ] : [];
 
   return (
