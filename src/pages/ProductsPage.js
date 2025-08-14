@@ -17,6 +17,7 @@ const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     category: 'all',
@@ -37,9 +38,20 @@ const ProductsPage = () => {
       if (filters.location) params.append('location', filters.location);
 
       const response = await axios.get(`/api/products?${params.toString()}`);
-      setProducts(response.data.products);
+      
+      // Filter out any products with missing required data
+      const validProducts = response.data.products.filter(product => 
+        product && 
+        product.name && 
+        product.name.trim() !== '' && 
+        product.description && 
+        product.location
+      );
+      
+      setProducts(validProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setError('Failed to load products. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -66,14 +78,14 @@ const ProductsPage = () => {
     }
 
     try {
-      const isFavorite = favorites.some(fav => fav.product_id === productId);
+      const isFavorite = favorites.some(fav => fav.productId === productId);
       
       if (isFavorite) {
         await axios.delete(`/api/favorites/${productId}`);
-        setFavorites(prev => prev.filter(fav => fav.product_id !== productId));
+        setFavorites(prev => prev.filter(fav => fav.productId !== productId));
       } else {
         await axios.post(`/api/favorites/${productId}`);
-        const product = products.find(p => p.product_id === productId);
+        const product = products.find(p => p.productId === productId);
         setFavorites(prev => [...prev, product]);
       }
     } catch (error) {
@@ -83,6 +95,11 @@ const ProductsPage = () => {
   };
 
   const formatCurrency = (amount) => {
+    // Handle null, undefined, or invalid amounts
+    if (amount == null || isNaN(amount) || amount < 0) {
+      return '₹0';
+    }
+    
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -131,7 +148,7 @@ const ProductsPage = () => {
           >
             <option value="all">All Categories</option>
             {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+              <option key={category.value} value={category.value}>{category.label}</option>
             ))}
           </select>
 
@@ -145,6 +162,32 @@ const ProductsPage = () => {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setError('')}
+                className="inline-flex text-red-400 hover:text-red-600"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Results */}
       {loading ? (
         <div className="flex justify-center py-12">
@@ -153,15 +196,20 @@ const ProductsPage = () => {
       ) : products.length > 0 ? (
         <div className="grid grid-3 gap-6">
           {products.map(product => {
-            const isFavorite = favorites.some(fav => fav.product_id === product.product_id);
+            // Additional safety check - skip products with missing critical data
+            if (!product || !product.productId || !product.name || !product.description) {
+              return null;
+            }
+            
+            const isFavorite = favorites.some(fav => fav.productId === product.productId);
             
             return (
-              <div key={product.product_id} className="card fade-in group">
+              <div key={product.productId} className="card fade-in group">
                 <div className="relative">
                   {product.image ? (
                     <img
                       src={product.image}
-                      alt={product.name}
+                      alt={product.name || 'Product'}
                       className="product-image"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -172,13 +220,13 @@ const ProductsPage = () => {
                   <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg flex items-center justify-center" style={{ display: product.image ? 'none' : 'flex' }}>
                     <div className="text-center">
                       <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <span className="text-gray-500 text-sm">{product.category}</span>
+                      <span className="text-gray-500 text-sm">{product.category || 'Uncategorized'}</span>
                     </div>
                   </div>
                   
                   {user && (
                     <button
-                      onClick={() => toggleFavorite(product.product_id)}
+                      onClick={() => toggleFavorite(product.productId)}
                       className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
                         isFavorite 
                           ? 'bg-red-500 text-white' 
@@ -190,48 +238,48 @@ const ProductsPage = () => {
                   )}
 
                   <div className="absolute top-3 left-3">
-                    <span className="badge badge-primary">{product.category}</span>
+                    <span className="badge badge-primary">{product.category || 'Uncategorized'}</span>
                   </div>
                 </div>
 
                 <div className="card-body">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                    {product.name}
+                    {product.name || 'Unnamed Product'}
                   </h3>
                   
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {product.description}
+                    {product.description || 'No description available'}
                   </p>
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Revenue</span>
                       <span className="font-semibold text-green-600">
-                        {formatCurrency(product.revenue)}/year
+                        {formatCurrency(product.revenue || 0)}/year
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Asking Price</span>
                       <span className="font-bold text-blue-600 text-lg">
-                        {formatCurrency(product.ask_value)}
+                        {formatCurrency(product.askValue || 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Profit</span>
                       <span className="font-semibold text-green-600">
-                        {formatCurrency(product.profit)}/year
+                        {formatCurrency(product.profit || 0)}/year
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4 text-gray-500 text-sm">
                     <MapPin className="w-4 h-4" />
-                    <span>{product.location}</span>
+                    <span>{product.location || 'Location not specified'}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Link
-                      to={`/product/${product.product_id}`}
+                      to={`/product/${product.productId}`}
                       className="btn btn-primary flex-1 text-center"
                     >
                       <Eye className="w-4 h-4" />
@@ -253,7 +301,7 @@ const ProductsPage = () => {
               : 'Be the first to list your startup!'
             }
           </p>
-          {user && (
+          {user && (user.role === 'SELLER' || user.role === 'BOTH') && (
             <Link to="/create-product" className="btn btn-primary">
               List Your Startup
             </Link>

@@ -195,7 +195,7 @@ const OffersPage = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatDate(offer.created_at)}</span>
+                          <span>{formatDate(offer.createdAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -308,7 +308,7 @@ const OffersPage = () => {
                       <div className="flex items-center gap-4 text-gray-600 text-sm">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatDate(offer.created_at)}</span>
+                          <span>{formatDate(offer.createdAt)}</span>
                         </div>
                       </div>
                     </div>

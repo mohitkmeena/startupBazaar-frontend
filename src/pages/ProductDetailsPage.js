@@ -56,18 +56,18 @@ const ProductDetailsPage = () => {
     }
 
     try {
-      const isFavorite = favorites.some(fav => fav.product_id === product.product_id);
+      const isFavorite = favorites.some(fav => fav.productId === product.productId);
       
       if (isFavorite) {
-        await axios.delete(`/api/favorites/${product.product_id}`);
-        setFavorites(prev => prev.filter(fav => fav.product_id !== product.product_id));
+        await axios.delete(`/api/favorites/${product.productId}`);
+        setFavorites(prev => prev.filter(fav => fav.productId !== product.productId));
       } else {
-        await axios.post(`/api/favorites/${product.product_id}`);
+        await axios.post(`/api/favorites/${product.productId}`);
         setFavorites(prev => [...prev, product]);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      alert(error.response?.data?.detail || 'Failed to update favorites');
+      alert('Failed to update favorites');
     }
   };
 
@@ -80,11 +80,13 @@ const ProductDetailsPage = () => {
 
     setOfferLoading(true);
     try {
-      await axios.post('/api/offers', {
-        product_id: product.product_id,
+      const submitData = {
+        productId: product.productId,
         amount: parseFloat(offerData.amount),
         message: offerData.message
-      });
+      };
+      
+      await axios.post('/api/offers', submitData);
       
       setShowOfferModal(false);
       setOfferData({ amount: '', message: '' });
@@ -136,8 +138,8 @@ const ProductDetailsPage = () => {
     );
   }
 
-  const isFavorite = favorites.some(fav => fav.product_id === product.product_id);
-  const isOwner = user && user.user_id === product.seller_id;
+  const isFavorite = favorites.some(fav => fav.productId === product.productId);
+  const isOwner = user && user.userId === product.sellerId;
 
   return (
     <div className="container py-8">
@@ -205,7 +207,7 @@ const ProductDetailsPage = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>Listed {formatDate(product.created_at)}</span>
+                  <span>Listed {formatDate(product.createdAt)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <User className="w-4 h-4" />
@@ -255,8 +257,8 @@ const ProductDetailsPage = () => {
             <div className="space-y-4">
               <div>
                 <div className="text-sm text-gray-500 mb-1">Asking Price</div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(product.ask_value)}
+                <div className="text-3xl font-bold text-blue-600">
+                  {formatCurrency(product.askValue)}
                 </div>
               </div>
               
@@ -279,7 +281,7 @@ const ProductDetailsPage = () => {
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Revenue Multiple</div>
                   <div className="font-semibold text-gray-900">
-                    {(product.ask_value / product.revenue).toFixed(1)}x
+                    {(product.askValue / product.revenue).toFixed(1)}x
                   </div>
                 </div>
               )}
