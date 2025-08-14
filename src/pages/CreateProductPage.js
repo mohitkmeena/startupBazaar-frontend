@@ -19,7 +19,7 @@ const CreateProductPage = () => {
     description: '',
     category: '',
     revenue: '',
-    ask_value: '',
+    askValue: '',
     profit: '',
     location: '',
     image: '',
@@ -104,7 +104,7 @@ const CreateProductPage = () => {
       return;
     }
 
-    if (parseFloat(formData.revenue) <= 0 || parseFloat(formData.ask_value) <= 0) {
+    if (parseFloat(formData.revenue) <= 0 || parseFloat(formData.askValue) <= 0) {
       setError('Revenue and asking price must be greater than 0');
       setLoading(false);
       return;
@@ -114,7 +114,7 @@ const CreateProductPage = () => {
       const submitData = {
         ...formData,
         revenue: parseFloat(formData.revenue),
-        ask_value: parseFloat(formData.ask_value),
+        askValue: parseFloat(formData.askValue),
         profit: parseFloat(formData.profit) || 0,
         documents: formData.documents.map(doc => doc.data)
       };
@@ -128,7 +128,7 @@ const CreateProductPage = () => {
     }
   };
 
-  if (!user || (user.role !== 'seller' && user.role !== 'both')) {
+  if (!user || (user.role !== 'SELLER' && user.role !== 'BOTH')) {
     return (
       <div className="container py-12">
         <div className="card max-w-md mx-auto p-8 text-center">
@@ -187,7 +187,7 @@ const CreateProductPage = () => {
                   >
                     <option value="">Select a category</option>
                     {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                      <option key={category.value} value={category.value}>{category.label}</option>
                     ))}
                   </select>
                 </div>
@@ -253,8 +253,8 @@ const CreateProductPage = () => {
                     <span className="absolute left-3 top-3 text-gray-400">₹</span>
                     <input
                       type="number"
-                      name="ask_value"
-                      value={formData.ask_value}
+                      name="askValue"
+                      value={formData.askValue}
                       onChange={handleChange}
                       className="form-input pl-8"
                       placeholder="5000000"
