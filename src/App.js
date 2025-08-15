@@ -16,7 +16,6 @@ import FavoritesPage from './pages/FavoritesPage';
 import OffersPage from './pages/OffersPage';
 import MyProductsPage from './pages/MyProductsPage';
 import ProfilePage from './pages/ProfilePage';
-
 // Context for global state management
 export const AppContext = React.createContext();
 
@@ -30,29 +29,15 @@ function App() {
     const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
     axios.defaults.baseURL = backendUrl;
     
-    // Add auth token to all requests
+    // Add auth token to all requests if exists
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserProfile();
-    } else {
-      setLoading(false);
     }
+    
+    // Set loading to false immediately - no need to wait for auth
+    setLoading(false);
   }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const response = await axios.get('/api/auth/me');
-      setUser(response.data);
-      fetchFavorites();
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchFavorites = async () => {
     try {
@@ -98,9 +83,9 @@ function App() {
   return (
     <AppContext.Provider value={contextValue}>
       <Router>
-        <div className="App">
+        <div className="App" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           <Header />
-          <main className="min-h-screen">
+          <main className="min-h-screen flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route 
@@ -112,26 +97,12 @@ function App() {
                 element={user ? <Navigate to="/products" /> : <RegisterPage />} 
               />
               <Route path="/products" element={<ProductsPage />} />
-              <Route path="/product/:id" element={<ProductDetailsPage />} />
-              
-              {/* Protected routes */}
-              {user ? (
-                <>
-                  <Route path="/create-product" element={<CreateProductPage />} />
-                  <Route path="/favorites" element={<FavoritesPage />} />
-                  <Route path="/offers" element={<OffersPage />} />
-                  <Route path="/my-products" element={<MyProductsPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                </>
-              ) : (
-                <>
-                  <Route path="/create-product" element={<Navigate to="/login" />} />
-                  <Route path="/favorites" element={<Navigate to="/login" />} />
-                  <Route path="/offers" element={<Navigate to="/login" />} />
-                  <Route path="/my-products" element={<Navigate to="/login" />} />
-                  <Route path="/profile" element={<Navigate to="/login" />} />
-                </>
-              )}
+              <Route path="/products/:id" element={<ProductDetailsPage />} />
+              <Route path="/create-product" element={user ? <CreateProductPage /> : <Navigate to="/login" />} />
+              <Route path="/favorites" element={user ? <FavoritesPage /> : <Navigate to="/login" />} />
+              <Route path="/offers" element={user ? <OffersPage /> : <Navigate to="/login" />} />
+              <Route path="/my-products" element={user ? <MyProductsPage /> : <Navigate to="/login" />} />
+              <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
               
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/" />} />

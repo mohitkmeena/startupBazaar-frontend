@@ -75,24 +75,27 @@ const FavoritesPage = () => {
           {favorites.map(product => (
             <div key={product.productId} className="card fade-in group">
               <div className="relative">
-                {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="product-image"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className="w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg flex items-center justify-center" 
-                  style={{ display: product.image ? 'none' : 'flex' }}
-                >
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    <span className="text-gray-500 text-sm">{product.category}</span>
+                {/* Product Image */}
+                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  {(product.imageUrl || product.image) ? (
+                    <img
+                      src={product.imageUrl || product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center" 
+                    style={{ display: (product.imageUrl || product.image) ? 'none' : 'flex' }}
+                  >
+                    <div className="text-center">
+                      <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <span className="text-gray-500 text-sm">{product.category}</span>
+                    </div>
                   </div>
                 </div>
                 

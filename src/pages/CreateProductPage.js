@@ -22,9 +22,10 @@ const CreateProductPage = () => {
     askValue: '',
     profit: '',
     location: '',
-    image: '',
-    documents: []
+    website: ''
   });
+  const [image, setImage] = useState(null);
+  const [documents, setDocuments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -61,35 +62,19 @@ const CreateProductPage = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target.result;
-      
-      if (type === 'image') {
-        setFormData(prev => ({ ...prev, image: base64 }));
-      } else if (type === 'document') {
-        setFormData(prev => ({
-          ...prev,
-          documents: [...prev.documents, {
-            id: Date.now(),
-            name: file.name,
-            data: base64
-          }]
-        }));
-      }
-    };
-    reader.readAsDataURL(file);
+    if (type === 'image') {
+      setImage(file);
+    } else if (type === 'document') {
+      setDocuments(prev => [...prev, file]);
+    }
   };
 
-  const removeDocument = (documentId) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter(doc => doc.id !== documentId)
-    }));
+  const removeDocument = (index) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeImage = () => {
-    setFormData(prev => ({ ...prev, image: '' }));
+    setImage(null);
   };
 
   const handleSubmit = async (e) => {
@@ -111,15 +96,29 @@ const CreateProductPage = () => {
     }
 
     try {
-      const submitData = {
-        ...formData,
-        revenue: parseFloat(formData.revenue),
-        askValue: parseFloat(formData.askValue),
-        profit: parseFloat(formData.profit) || 0,
-        documents: formData.documents.map(doc => doc.data)
-      };
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('revenue', parseFloat(formData.revenue));
+      formDataToSend.append('askValue', parseFloat(formData.askValue));
+      formDataToSend.append('profit', parseFloat(formData.profit) || 0);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('website', formData.website);
 
-      await axios.post('/api/products', submitData);
+      if (image) {
+        formDataToSend.append('image', image);
+      }
+
+      documents.forEach((doc, index) => {
+        formDataToSend.append(`documents`, doc);
+      });
+
+      await axios.post('/api/products', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       navigate('/my-products');
     } catch (error) {
       setError(error.response?.data?.detail || 'Failed to create product');
@@ -221,6 +220,21 @@ const CreateProductPage = () => {
                   />
                 </div>
               </div>
+
+              <div className="form-group">
+                <label className="form-label">Website</label>
+                <div className="relative">
+                  <Type className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    className="form-input pl-10"
+                    placeholder="https://yourstartup.com"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Financial Information */}
@@ -287,10 +301,10 @@ const CreateProductPage = () => {
                 Product Image
               </h3>
               
-              {formData.image ? (
+              {image ? (
                 <div className="relative inline-block">
                   <img
-                    src={formData.image}
+                    src={URL.createObjectURL(image)}
                     alt="Product preview"
                     className="w-48 h-32 object-cover rounded-lg border"
                   />
@@ -328,17 +342,17 @@ const CreateProductPage = () => {
               </h3>
               <p className="text-gray-600 text-sm mb-4">Upload documents like ITR, GST certificates to build trust</p>
               
-              {formData.documents.length > 0 && (
+              {documents.length > 0 && (
                 <div className="mb-4 space-y-2">
-                  {formData.documents.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {documents.map((doc, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-gray-500" />
                         <span className="text-sm text-gray-700">{doc.name}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeDocument(doc.id)}
+                        onClick={() => removeDocument(index)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <X className="w-4 h-4" />

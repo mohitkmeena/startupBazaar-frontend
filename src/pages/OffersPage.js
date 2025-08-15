@@ -53,8 +53,19 @@ const OffersPage = () => {
     try {
       const response = await axios.post(`/api/offers/${offerId}/${action}`);
       
-      if (action === 'accept' && response.data.seller_email) {
-        alert(`Offer accepted! Seller contact details:\n\nEmail: ${response.data.seller_email}\nPhone: ${response.data.seller_phone || 'Not provided'}\nName: ${response.data.seller_name}`);
+      if (action === 'accept' && response.data.buyer_contact && response.data.seller_contact) {
+        const buyerContact = response.data.buyer_contact;
+        const sellerContact = response.data.seller_contact;
+        
+        alert(`Offer accepted! Contact details exchanged:\n\n` +
+              `Buyer Contact:\n` +
+              `Name: ${buyerContact.name}\n` +
+              `Email: ${buyerContact.email}\n` +
+              `Phone: ${buyerContact.phone || 'Not provided'}\n\n` +
+              `Seller Contact:\n` +
+              `Name: ${sellerContact.name}\n` +
+              `Email: ${sellerContact.email}\n` +
+              `Phone: ${sellerContact.phone || 'Not provided'}`);
       } else if (action === 'reject') {
         alert('Offer rejected successfully');
       }
@@ -87,6 +98,39 @@ const OffersPage = () => {
     }
   };
 
+  const handleCounterOfferResponse = async (offerId, responseType, message = '') => {
+    setActionLoading(offerId + responseType);
+    try {
+      const response = await axios.post(`/api/offers/${offerId}/counter`, {
+        responseType: responseType,
+        message: message
+      });
+      
+      if (responseType === 'accept' && response.data.buyer_contact && response.data.seller_contact) {
+        const buyerContact = response.data.buyer_contact;
+        const sellerContact = response.data.seller_contact;
+        
+        alert(`Counter offer accepted! Contact details exchanged:\n\n` +
+              `Buyer Contact:\n` +
+              `Name: ${buyerContact.name}\n` +
+              `Email: ${buyerContact.email}\n` +
+              `Phone: ${buyerContact.phone || 'Not provided'}\n\n` +
+              `Seller Contact:\n` +
+              `Name: ${sellerContact.name}\n` +
+              `Email: ${sellerContact.email}\n` +
+              `Phone: ${sellerContact.phone || 'Not provided'}`);
+      } else if (responseType === 'reject') {
+        alert('Counter offer rejected successfully');
+      }
+      
+      await fetchOffers();
+    } catch (error) {
+      alert(error.response?.data?.detail || `Failed to ${responseType} counter offer`);
+    } finally {
+      setActionLoading('');
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -111,6 +155,8 @@ const OffersPage = () => {
       case 'accepted': return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'rejected': return <XCircle className="w-5 h-5 text-red-500" />;
       case 'countered': return <ArrowRightLeft className="w-5 h-5 text-blue-500" />;
+      case 'counter_accepted': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'counter_rejected': return <XCircle className="w-5 h-5 text-red-500" />;
       default: return <Clock className="w-5 h-5 text-yellow-500" />;
     }
   };
@@ -120,6 +166,8 @@ const OffersPage = () => {
       case 'accepted': return 'status-accepted';
       case 'rejected': return 'status-rejected';
       case 'countered': return 'status-countered';
+      case 'counter_accepted': return 'status-accepted';
+      case 'counter_rejected': return 'status-rejected';
       default: return 'status-pending';
     }
   };
@@ -217,6 +265,38 @@ const OffersPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Show buyer contact only when offer is accepted */}
+                  {offer.status === 'accepted' && (
+                    <div className="bg-green-50 p-4 rounded-lg mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="font-medium text-green-900">Offer Accepted - Contact Details</span>
+                      </div>
+                      
+                      {/* Show final accepted amount */}
+                      <div className="mb-3 p-3 bg-green-100 rounded-lg">
+                        <span className="text-sm text-green-700">Final Accepted Amount: </span>
+                        <span className="font-bold text-green-600 text-lg">
+                          {formatCurrency(offer.amount)}
+                        </span>
+                      </div>
+                      
+                      {/* Buyer Contact Information */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-green-700">
+                          <User className="w-4 h-4" />
+                          <span>{offer.buyer_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-green-700">
+                          <Mail className="w-4 h-4" />
+                          <a href={`mailto:${offer.buyer_email}`} className="hover:underline">
+                            {offer.buyer_email}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {offer.status === 'countered' && offer.counter_amount && (
                     <div className="bg-blue-50 p-4 rounded-lg mb-4">
@@ -343,21 +423,94 @@ const OffersPage = () => {
                       {offer.counter_message && (
                         <p className="text-orange-700 text-sm italic">"{offer.counter_message}"</p>
                       )}
+                      
+                      {/* Counter Offer Response Buttons */}
+                      <div className="flex gap-3 mt-3">
+                        <button
+                          onClick={() => handleCounterOfferResponse(offer.offer_id, 'accept')}
+                          disabled={actionLoading === offer.offer_id + 'accept'}
+                          className="btn btn-primary btn-sm"
+                        >
+                          {actionLoading === offer.offer_id + 'accept' ? (
+                            <div className="spinner" />
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              Accept Counter
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleCounterOfferResponse(offer.offer_id, 'reject')}
+                          disabled={actionLoading === offer.offer_id + 'reject'}
+                          className="btn btn-outline btn-sm text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          {actionLoading === offer.offer_id + 'reject' ? (
+                            <div className="spinner" />
+                          ) : (
+                            <>
+                              <XCircle className="w-4 h-4" />
+                              Reject Counter
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {offer.status === 'accepted' && offer.seller_contact && (
+                  {/* Show counter offer response if available */}
+                  {(offer.status === 'counter_accepted' || offer.status === 'counter_rejected') && offer.counter_response_message && (
+                    <div className={`p-4 rounded-lg mb-4 ${
+                      offer.status === 'counter_accepted' ? 'bg-green-50' : 'bg-red-50'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {offer.status === 'counter_accepted' ? (
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-600" />
+                        )}
+                        <span className={`font-medium ${
+                          offer.status === 'counter_accepted' ? 'text-green-900' : 'text-red-900'
+                        }`}>
+                          Counter Offer {offer.status === 'counter_accepted' ? 'Accepted' : 'Rejected'}
+                        </span>
+                      </div>
+                      {offer.status === 'counter_accepted' && offer.counter_amount && (
+                        <div className="mb-2">
+                          <span className="text-sm text-green-700">Final Amount: </span>
+                          <span className="font-bold text-green-600">{formatCurrency(offer.counter_amount)}</span>
+                        </div>
+                      )}
+                      <p className={`text-sm italic ${
+                        offer.status === 'counter_accepted' ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        "{offer.counter_response_message}"
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show contact details for accepted offers (including counter-accepted) */}
+                  {(offer.status === 'accepted' || offer.status === 'counter_accepted') && offer.seller_contact && (
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <CheckCircle className="w-5 h-5 text-green-600" />
                         <span className="font-medium text-green-900">Offer Accepted - Contact Details</span>
                       </div>
+                      
+                      {/* Show final accepted amount */}
+                      <div className="mb-3 p-3 bg-green-100 rounded-lg">
+                        <span className="text-sm text-green-700">Final Accepted Amount: </span>
+                        <span className="font-bold text-green-600 text-lg">
+                          {formatCurrency(offer.counter_amount || offer.amount)}
+                        </span>
+                      </div>
+                      
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-green-700">
                           <User className="w-4 h-4" />
                           <span>{offer.seller_contact.name}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-green-700">
+                        <div className="flex items-center gap-2 text-green-900">
                           <Mail className="w-4 h-4" />
                           <a href={`mailto:${offer.seller_contact.email}`} className="hover:underline">
                             {offer.seller_contact.email}

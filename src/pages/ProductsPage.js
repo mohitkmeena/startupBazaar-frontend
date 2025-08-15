@@ -10,7 +10,9 @@ import {
   TrendingUp, 
   DollarSign,
   Eye,
-  Star
+  Star,
+  Type,
+  FileText
 } from 'lucide-react';
 
 const ProductsPage = () => {
@@ -32,6 +34,9 @@ const ProductsPage = () => {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
+      setError('');
+      
       const params = new URLSearchParams();
       if (filters.category !== 'all') params.append('category', filters.category);
       if (filters.search) params.append('search', filters.search);
@@ -39,19 +44,17 @@ const ProductsPage = () => {
 
       const response = await axios.get(`/api/products?${params.toString()}`);
       
-      // Filter out any products with missing required data
-      const validProducts = response.data.products.filter(product => 
-        product && 
-        product.name && 
-        product.name.trim() !== '' && 
-        product.description && 
-        product.location
-      );
+      if (!response.data.products) {
+        setProducts([]);
+        setError('No products data received from server');
+        return;
+      }
       
-      setProducts(validProducts);
+      setProducts(response.data.products);
     } catch (error) {
       console.error('Error fetching products:', error);
-      setError('Failed to load products. Please try again later.');
+      setError(`Failed to load products: ${error.response?.data?.message || error.message}`);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -78,14 +81,14 @@ const ProductsPage = () => {
     }
 
     try {
-      const isFavorite = favorites.some(fav => fav.productId === productId);
+      const isFavorite = favorites.some(fav => (fav.productId || fav.id) === productId);
       
       if (isFavorite) {
         await axios.delete(`/api/favorites/${productId}`);
-        setFavorites(prev => prev.filter(fav => fav.productId !== productId));
+        setFavorites(prev => prev.filter(fav => (fav.productId || fav.id) !== productId));
       } else {
         await axios.post(`/api/favorites/${productId}`);
-        const product = products.find(p => p.productId === productId);
+        const product = products.find(p => (p.productId || p.id) === productId);
         setFavorites(prev => [...prev, product]);
       }
     } catch (error) {
@@ -196,28 +199,23 @@ const ProductsPage = () => {
       ) : products.length > 0 ? (
         <div className="grid grid-3 gap-6">
           {products.map(product => {
-            // Additional safety check - skip products with missing critical data
-            if (!product || !product.productId || !product.name || !product.description) {
-              return null;
-            }
-            
-            const isFavorite = favorites.some(fav => fav.productId === product.productId);
+            const isFavorite = favorites.some(fav => (fav.productId || fav.id) === (product.productId || product.id));
             
             return (
               <div key={product.productId} className="card fade-in group">
                 <div className="relative">
-                  {product.image ? (
+                  {product.imageUrl || product.image ? (
                     <img
-                      src={product.image}
-                      alt={product.name || 'Product'}
-                      className="product-image"
+                      src={product.imageUrl || product.image}
+                      alt={product.name}
+                      className="w-full h-48 object-cover rounded-t-lg"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextElementSibling.style.display = 'flex';
                       }}
                     />
                   ) : null}
-                  <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg flex items-center justify-center" style={{ display: product.image ? 'none' : 'flex' }}>
+                  <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg flex items-center justify-center" style={{ display: (product.imageUrl || product.image) ? 'none' : 'flex' }}>
                     <div className="text-center">
                       <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                       <span className="text-gray-500 text-sm">{product.category || 'Uncategorized'}</span>
@@ -226,7 +224,7 @@ const ProductsPage = () => {
                   
                   {user && (
                     <button
-                      onClick={() => toggleFavorite(product.productId)}
+                      onClick={() => toggleFavorite(product.productId || product.id)}
                       className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
                         isFavorite 
                           ? 'bg-red-500 text-white' 
@@ -277,12 +275,33 @@ const ProductsPage = () => {
                     <span>{product.location || 'Location not specified'}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to={`/product/${product.productId}`}
-                      className="btn btn-primary flex-1 text-center"
+                  {product.website && (
+                    <div className="flex items-center gap-2 mb-4 text-gray-500 text-sm">
+                      <Type className="w-4 h-4" />
+                      <a 
+                        href={product.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+
+                  {product.documents && product.documents.length > 0 && (
+                    <div className="flex items-center gap-2 mb-4 text-gray-500 text-sm">
+                      <FileText className="w-4 h-4" />
+                      <span>{product.documents.length} document{product.documents.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end mt-auto">
+                    <Link 
+                      to={`/products/${product.productId || product.id}`}
+                      className="btn btn-primary btn-sm"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4 mr-1" />
                       View Details
                     </Link>
                   </div>
@@ -292,20 +311,25 @@ const ProductsPage = () => {
           })}
         </div>
       ) : (
-        <div className="empty-state">
-          <Search className="w-16 h-16 text-white/30 mx-auto mb-4" />
-          <h3 className="text-2xl font-semibold text-white mb-2">No products found</h3>
-          <p className="text-white/70 mb-6">
-            {filters.search || filters.category !== 'all' || filters.location 
-              ? 'Try adjusting your filters to find more products'
-              : 'Be the first to list your startup!'
-            }
-          </p>
-          {user && (user.role === 'SELLER' || user.role === 'BOTH') && (
-            <Link to="/create-product" className="btn btn-primary">
-              List Your Startup
-            </Link>
-          )}
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Products Found</h3>
+            <p className="text-gray-600 mb-6">
+              {error ? error : "No products match your current filters. Try adjusting your search criteria or check back later."}
+            </p>
+            {error && (
+              <button 
+                onClick={() => {
+                  setError('');
+                  setFilters({ search: '', category: 'all', location: '' });
+                }}
+                className="btn btn-primary"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

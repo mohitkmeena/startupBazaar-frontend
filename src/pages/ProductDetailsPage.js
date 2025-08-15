@@ -14,7 +14,9 @@ import {
   Calendar,
   User,
   Shield,
-  X
+  X,
+  Type,
+  Download
 } from 'lucide-react';
 
 const ProductDetailsPage = () => {
@@ -30,10 +32,15 @@ const ProductDetailsPage = () => {
     message: ''
   });
   const [offerLoading, setOfferLoading] = useState(false);
+  const [offers, setOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
 
   useEffect(() => {
     fetchProduct();
-  }, [id]);
+    if (user) {
+      fetchOffers();
+    }
+  }, [id, user]);
 
   const fetchProduct = async () => {
     try {
@@ -49,6 +56,31 @@ const ProductDetailsPage = () => {
     }
   };
 
+  const fetchOffers = async () => {
+    if (!user || !product) return;
+    
+    try {
+      setLoadingOffers(true);
+      const response = await axios.get(`/api/offers/product/${product.productId || product.id}`);
+      setOffers(response.data.offers || []);
+    } catch (error) {
+      console.error('Error fetching offers:', error);
+      setOffers([]);
+    } finally {
+      setLoadingOffers(false);
+    }
+  };
+
+  const handleOfferAction = async (offerId, action) => {
+    try {
+      await axios.put(`/api/offers/${offerId}/${action}`);
+      fetchOffers(); // Refresh offers
+      alert(`Offer ${action}ed successfully!`);
+    } catch (error) {
+      alert(`Failed to ${action} offer: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
   const toggleFavorite = async () => {
     if (!user) {
       alert('Please login to add favorites');
@@ -56,13 +88,14 @@ const ProductDetailsPage = () => {
     }
 
     try {
-      const isFavorite = favorites.some(fav => fav.productId === product.productId);
+      const productId = product.productId || product.id;
+      const isFavorite = favorites.some(fav => (fav.productId || fav.id) === productId);
       
       if (isFavorite) {
-        await axios.delete(`/api/favorites/${product.productId}`);
-        setFavorites(prev => prev.filter(fav => fav.productId !== product.productId));
+        await axios.delete(`/api/favorites/${productId}`);
+        setFavorites(prev => prev.filter(fav => (fav.productId || fav.id) !== productId));
       } else {
-        await axios.post(`/api/favorites/${product.productId}`);
+        await axios.post(`/api/favorites/${productId}`);
         setFavorites(prev => [...prev, product]);
       }
     } catch (error) {
@@ -81,7 +114,7 @@ const ProductDetailsPage = () => {
     setOfferLoading(true);
     try {
       const submitData = {
-        productId: product.productId,
+        productId: product.productId || product.id,
         amount: parseFloat(offerData.amount),
         message: offerData.message
       };
@@ -157,9 +190,9 @@ const ProductDetailsPage = () => {
         <div className="lg:col-span-2">
           <div className="card p-8">
             {/* Product Image */}
-            {product.image ? (
+            {(product.imageUrl || product.image) ? (
               <img
-                src={product.image}
+                src={product.imageUrl || product.image}
                 alt={product.name}
                 className="product-image-large mb-6"
                 onError={(e) => {
@@ -170,7 +203,7 @@ const ProductDetailsPage = () => {
             ) : null}
             <div 
               className="w-full h-64 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mb-6" 
-              style={{ display: product.image ? 'none' : 'flex' }}
+              style={{ display: (product.imageUrl || product.image) ? 'none' : 'flex' }}
             >
               <div className="text-center">
                 <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -205,6 +238,19 @@ const ProductDetailsPage = () => {
                   <MapPin className="w-4 h-4" />
                   <span>{product.location}</span>
                 </div>
+                {product.website && (
+                  <div className="flex items-center gap-1">
+                    <Type className="w-4 h-4" />
+                    <a 
+                      href={product.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      Website
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   <span>Listed {formatDate(product.createdAt)}</span>
@@ -230,15 +276,30 @@ const ProductDetailsPage = () => {
                   <Shield className="w-5 h-5" />
                   Verification Documents
                 </h3>
-                <div className="grid grid-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {product.documents.map((doc, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div key={doc.id || index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <FileText className="w-5 h-5 text-gray-500" />
-                      <span className="text-sm text-gray-700">Document {index + 1}</span>
-                      <div className="ml-auto">
-                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 truncate">{doc.fileName}</p>
+                        <p className="text-xs text-gray-500">{doc.contentType}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </a>
+                        <a
+                          href={doc.url}
+                          download={doc.fileName}
+                          className="text-green-600 hover:text-green-700 text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
                       </div>
                     </div>
                   ))}
@@ -318,15 +379,78 @@ const ProductDetailsPage = () => {
           {isOwner && (
             <div className="card p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Listing</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                This is your product listing. You can manage offers from your dashboard.
-              </p>
-              <button
-                onClick={() => navigate('/offers')}
-                className="btn btn-primary w-full"
-              >
-                View Offers
-              </button>
+              
+              {loadingOffers ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : offers.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900">Recent Offers</h4>
+                  {offers.slice(0, 3).map(offer => (
+                    <div key={offer.id} className="border rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-medium text-gray-900">₹{offer.amount}</div>
+                          <div className="text-sm text-gray-500">by {offer.buyerName}</div>
+                        </div>
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${
+                          offer.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          offer.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {offer.status}
+                        </div>
+                      </div>
+                      {offer.message && (
+                        <div className="text-sm text-gray-600 mb-2">"{offer.message}"</div>
+                      )}
+                      {offer.status === 'PENDING' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOfferAction(offer.id, 'accept')}
+                            className="btn btn-success btn-sm"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleOfferAction(offer.id, 'reject')}
+                            className="btn btn-danger btn-sm"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleOfferAction(offer.id, 'counter')}
+                            className="btn btn-warning btn-sm"
+                          >
+                            Counter
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {offers.length > 3 && (
+                    <button
+                      onClick={() => navigate('/offers')}
+                      className="btn btn-outline w-full"
+                    >
+                      View All Offers
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-600 text-sm mb-4">
+                    No offers yet. Share your listing to attract potential buyers.
+                  </p>
+                  <button
+                    onClick={() => navigate('/offers')}
+                    className="btn btn-primary w-full"
+                  >
+                    View Offers Dashboard
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

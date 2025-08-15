@@ -11,7 +11,8 @@ import {
   MapPin, 
   MessageSquare,
   Calendar,
-  Store
+  Store,
+  Type
 } from 'lucide-react';
 
 const MyProductsPage = () => {
@@ -98,12 +99,12 @@ const MyProductsPage = () => {
             <div key={product.productId} className="card p-6 fade-in">
               <div className="flex items-start gap-6">
                 {/* Product Image */}
-                <div className="flex-shrink-0">
-                  {product.image ? (
+                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  {(product.imageUrl || product.image) ? (
                     <img
-                      src={product.image}
+                      src={product.imageUrl || product.image}
                       alt={product.name}
-                      className="w-32 h-24 object-cover rounded-lg"
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextElementSibling.style.display = 'flex';
@@ -111,8 +112,8 @@ const MyProductsPage = () => {
                     />
                   ) : null}
                   <div 
-                    className="w-32 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center" 
-                    style={{ display: product.image ? 'none' : 'flex' }}
+                    className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center" 
+                    style={{ display: (product.imageUrl || product.image) ? 'none' : 'flex' }}
                   >
                     <TrendingUp className="w-8 h-8 text-gray-400" />
                   </div>
@@ -131,6 +132,19 @@ const MyProductsPage = () => {
                           <MapPin className="w-4 h-4" />
                           <span>{product.location}</span>
                         </div>
+                        {product.website && (
+                          <div className="flex items-center gap-1">
+                            <Type className="w-4 h-4" />
+                            <a 
+                              href={product.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 hover:underline"
+                            >
+                              Website
+                            </a>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>Listed {formatDate(product.createdAt)}</span>
@@ -170,7 +184,7 @@ const MyProductsPage = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-3">
                     <Link
-                      to={`/product/${product.productId}`}
+                      to={`/products/${product.productId || product.id}`}
                       className="btn btn-outline"
                     >
                       <Eye className="w-4 h-4" />
