@@ -395,8 +395,8 @@ const ProductDetailsPage = () => {
                           <div className="text-sm text-gray-500">by {offer.buyerName}</div>
                         </div>
                         <div className={`px-2 py-1 rounded text-xs font-medium ${
-                          offer.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                          offer.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                          offer.status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          offer.status?.toLowerCase() === 'accepted' ? 'bg-green-100 text-green-800' :
                           'bg-red-100 text-red-800'
                         }`}>
                           {offer.status}
@@ -405,7 +405,7 @@ const ProductDetailsPage = () => {
                       {offer.message && (
                         <div className="text-sm text-gray-600 mb-2">"{offer.message}"</div>
                       )}
-                      {offer.status === 'PENDING' && (
+                      {offer.status?.toLowerCase() === 'pending' && (
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleOfferAction(offer.id, 'accept')}

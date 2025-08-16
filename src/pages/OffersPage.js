@@ -101,7 +101,7 @@ const OffersPage = () => {
   const handleCounterOfferResponse = async (offerId, responseType, message = '') => {
     setActionLoading(offerId + responseType);
     try {
-      const response = await axios.post(`/api/offers/${offerId}/counter`, {
+      const response = await axios.post(`/api/offers/${offerId}/counter/respond`, {
         responseType: responseType,
         message: message
       });
@@ -151,7 +151,7 @@ const OffersPage = () => {
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'accepted': return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'rejected': return <XCircle className="w-5 h-5 text-red-500" />;
       case 'countered': return <ArrowRightLeft className="w-5 h-5 text-blue-500" />;
@@ -162,7 +162,7 @@ const OffersPage = () => {
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'accepted': return 'status-accepted';
       case 'rejected': return 'status-rejected';
       case 'countered': return 'status-countered';
@@ -267,7 +267,7 @@ const OffersPage = () => {
                   </div>
 
                   {/* Show buyer contact only when offer is accepted */}
-                  {offer.status === 'accepted' && (
+                  {offer.status?.toLowerCase() === 'accepted' && (
                     <div className="bg-green-50 p-4 rounded-lg mb-4">
                       <div className="flex items-center gap-2 mb-3">
                         <CheckCircle className="w-5 h-5 text-green-600" />
@@ -298,7 +298,7 @@ const OffersPage = () => {
                     </div>
                   )}
 
-                  {offer.status === 'countered' && offer.counter_amount && (
+                  {offer.status?.toLowerCase() === 'countered' && offer.counter_amount && (
                     <div className="bg-blue-50 p-4 rounded-lg mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <ArrowRightLeft className="w-4 h-4 text-blue-600" />
@@ -313,7 +313,7 @@ const OffersPage = () => {
                     </div>
                   )}
 
-                  {offer.status === 'pending' && (
+                  {offer.status?.toLowerCase() === 'pending' && (
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleOfferAction(offer.offer_id, 'accept')}
@@ -411,7 +411,7 @@ const OffersPage = () => {
                     )}
                   </div>
 
-                  {offer.status === 'countered' && offer.counter_amount && (
+                  {offer.status?.toLowerCase() === 'countered' && offer.counter_amount && (
                     <div className="bg-orange-50 p-4 rounded-lg mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <ArrowRightLeft className="w-4 h-4 text-orange-600" />
@@ -459,30 +459,30 @@ const OffersPage = () => {
                   )}
 
                   {/* Show counter offer response if available */}
-                  {(offer.status === 'counter_accepted' || offer.status === 'counter_rejected') && offer.counter_response_message && (
+                  {(offer.status?.toLowerCase() === 'counter_accepted' || offer.status?.toLowerCase() === 'counter_rejected') && offer.counter_response_message && (
                     <div className={`p-4 rounded-lg mb-4 ${
-                      offer.status === 'counter_accepted' ? 'bg-green-50' : 'bg-red-50'
+                      offer.status?.toLowerCase() === 'counter_accepted' ? 'bg-green-50' : 'bg-red-50'
                     }`}>
                       <div className="flex items-center gap-2 mb-2">
-                        {offer.status === 'counter_accepted' ? (
+                        {offer.status?.toLowerCase() === 'counter_accepted' ? (
                           <CheckCircle className="w-4 h-4 text-green-600" />
                         ) : (
                           <XCircle className="w-4 h-4 text-red-600" />
                         )}
                         <span className={`font-medium ${
-                          offer.status === 'counter_accepted' ? 'text-green-900' : 'text-red-900'
+                          offer.status?.toLowerCase() === 'counter_accepted' ? 'text-green-900' : 'text-red-900'
                         }`}>
-                          Counter Offer {offer.status === 'counter_accepted' ? 'Accepted' : 'Rejected'}
+                          Counter Offer {offer.status?.toLowerCase() === 'counter_accepted' ? 'Accepted' : 'Rejected'}
                         </span>
                       </div>
-                      {offer.status === 'counter_accepted' && offer.counter_amount && (
+                      {offer.status?.toLowerCase() === 'counter_accepted' && offer.counter_amount && (
                         <div className="mb-2">
                           <span className="text-sm text-green-700">Final Amount: </span>
                           <span className="font-bold text-green-600">{formatCurrency(offer.counter_amount)}</span>
                         </div>
                       )}
                       <p className={`text-sm italic ${
-                        offer.status === 'counter_accepted' ? 'text-green-700' : 'text-red-700'
+                        offer.status?.toLowerCase() === 'counter_accepted' ? 'text-green-700' : 'text-red-700'
                       }`}>
                         "{offer.counter_response_message}"
                       </p>
@@ -490,7 +490,7 @@ const OffersPage = () => {
                   )}
 
                   {/* Show contact details for accepted offers (including counter-accepted) */}
-                  {(offer.status === 'accepted' || offer.status === 'counter_accepted') && offer.seller_contact && (
+                  {(offer.status?.toLowerCase() === 'accepted' || offer.status?.toLowerCase() === 'counter_accepted') && offer.seller_contact && (
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <CheckCircle className="w-5 h-5 text-green-600" />
