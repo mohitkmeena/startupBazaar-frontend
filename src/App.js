@@ -26,7 +26,7 @@ function App() {
 
   // Setup axios defaults
   useEffect(() => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://project-backend-latest.onrender.com';
     axios.defaults.baseURL = backendUrl;
     
     // Add auth token to all requests if exists
